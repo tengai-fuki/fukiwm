@@ -236,6 +236,7 @@ typedef struct {
 	xcb_size_hints_t size_hints;
 	icccm_props_t icccm_props;
 	wm_flags_t wm_flags;
+	xcb_window_t titlebar;
 } client_t;
 
 typedef struct presel_t presel_t;

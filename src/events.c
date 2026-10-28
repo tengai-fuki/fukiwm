@@ -34,6 +34,7 @@
 #include "pointer.h"
 #include "rule.h"
 #include "events.h"
+#include "titlebar.h"
 
 uint8_t randr_base;
 
@@ -68,6 +69,9 @@ void handle_event(xcb_generic_event_t *evt)
 		case XCB_MOTION_NOTIFY:
 			motion_notify(evt);
 			break;
+		case XCB_EXPOSE:
+            titlebar_handle_expose(evt);
+            break;
 		case XCB_BUTTON_PRESS:
 			button_press(evt);
 			break;
@@ -374,6 +378,11 @@ void focus_in(xcb_generic_event_t *evt)
 
 void button_press(xcb_generic_event_t *evt)
 {
+
+	if (titlebar_handle_click(evt)) {
+    return; // Eğer tıklama bizim çubuğa geldiyse, bspwm sen karışma biz hallettik diyoruz.
+	}
+	
 	xcb_button_press_event_t *e = (xcb_button_press_event_t *) evt;
 	bool replay = false;
 	for (unsigned int i = 0; i < LENGTH(BUTTONS); i++) {

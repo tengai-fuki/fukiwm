@@ -40,6 +40,7 @@
 #include "tree.h"
 #include "parse.h"
 #include "window.h"
+#include "titlebar.h"
 
 void schedule_window(xcb_window_t win)
 {
@@ -140,6 +141,8 @@ bool manage_window(xcb_window_t win, rule_consequence_t *csq, int fd)
 	n->client = c;
 	initialize_client(n);
 	initialize_floating_rectangle(n);
+	titlebar_create(c);
+    titlebar_draw(c);
 
 	if (csq->rect != NULL) {
 		c->floating_rectangle = *csq->rect;
@@ -744,6 +747,7 @@ void query_pointer(xcb_window_t *win, xcb_point_t *pt)
 						}
 					}
 				}
+
 			} else {
 				*win = qpr->child;
 				xcb_point_t pt = {qpr->root_x, qpr->root_y};
@@ -752,8 +756,14 @@ void query_pointer(xcb_window_t *win, xcb_point_t *pt)
 						continue;
 					}
 					xcb_rectangle_t rect = get_rectangle(NULL, NULL, s->node);
+
+					if (s->node->client != NULL && s->node->client->titlebar != XCB_NONE) {
+						rect.y -= titlebar_height;
+						rect.height += titlebar_height;
+					}
+
 					if (is_inside(pt, rect)) {
-						if (s->node->id == qpr->child || is_presel_window(qpr->child)) {
+						if (s->node->id == qpr->child || is_presel_window(qpr->child) || (s->node->client != NULL && s->node->client->titlebar == qpr->child)) {
 							*win = s->node->id;
 						}
 						break;
@@ -830,18 +840,21 @@ void window_border_width(xcb_window_t win, uint32_t bw)
 
 void window_move(xcb_window_t win, int16_t x, int16_t y)
 {
+	titlebar_hook_move(win, &x, &y);
 	uint32_t values[] = {x, y};
 	xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_X_Y, values);
 }
 
 void window_resize(xcb_window_t win, uint16_t w, uint16_t h)
 {
+	titlebar_hook_resize(win, &w, &h); // KANCA
 	uint32_t values[] = {w, h};
 	xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_WIDTH_HEIGHT, values);
 }
 
 void window_move_resize(xcb_window_t win, int16_t x, int16_t y, uint16_t w, uint16_t h)
 {
+	titlebar_hook_move_resize(win, &x, &y, &w, &h);
 	uint32_t values[] = {x, y, w, h};
 	xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_X_Y_WIDTH_HEIGHT, values);
 }

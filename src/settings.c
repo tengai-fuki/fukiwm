@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include "bspwm.h"
 #include "settings.h"
+#include "titlebar.h"
 
 char external_rules_command[MAXLEN];
 char status_prefix[MAXLEN];
@@ -96,6 +97,10 @@ void load_settings(void)
 	snprintf(active_border_color, sizeof(active_border_color), "%s", ACTIVE_BORDER_COLOR);
 	snprintf(focused_border_color, sizeof(focused_border_color), "%s", FOCUSED_BORDER_COLOR);
 	snprintf(presel_feedback_color, sizeof(presel_feedback_color), "%s", PRESEL_FEEDBACK_COLOR);
+
+	snprintf(focused_border_color, sizeof(focused_border_color), "#%06X", titlebar_bg_color);
+
+    snprintf(normal_border_color, sizeof(normal_border_color), "#%06X", titlebar_bg_color);
 
 	padding = (padding_t) PADDING;
 	monocle_padding = (padding_t) MONOCLE_PADDING;
