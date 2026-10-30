@@ -32,5 +32,7 @@ void titlebar_hook_move_resize(xcb_window_t win, int16_t *x, int16_t *y, uint16_
 void titlebar_hook_resize(xcb_window_t win, uint16_t *w, uint16_t *h);
 void titlebar_hook_move(xcb_window_t win, int16_t *x, int16_t *y);
 void titlebar_handle_expose(xcb_generic_event_t *evt);
+void titlebar_destroy(client_t *c);
+void titlebar_update_visibility(client_t *c);
 
 #endif

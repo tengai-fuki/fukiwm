@@ -1,6 +1,6 @@
 /*
  * ============================================================================
- * fukiwm (吹雪ウィンドウマネージャー)
+ * fukiwm (ウィンドウマネージャー)
  * コアウィンドウマネージャー ＆ ネイティブタイトルバーエンジン
  * 
  * 設計・開発 (Author)  : phobos0_ (不慕子)
@@ -22,9 +22,13 @@
 #include "titlebar.h"
 #include "query.h"
 #include "settings.h"
+#include "desktop.h"
+#include <string.h>
 
 void titlebar_create(client_t *c) {
     if (c == NULL) return;
+
+    if (c->state == STATE_FULLSCREEN || c->border_width == 0) return;
 
     c->titlebar = xcb_generate_id(dpy); 
     
@@ -87,29 +91,52 @@ bool titlebar_handle_click(xcb_generic_event_t *evt) {
                     } 
 
                     else if (cx >= 46 && cx <= 56) {
-                        client_state_t next = (n->client->state == STATE_FULLSCREEN) ? STATE_TILED : STATE_FULLSCREEN;
-                        set_state(m, d, n, next); 
-                        return true;
-                    }
+    
+                        if (n->client->state == STATE_FLOATING) {
+                            set_state(m, d, n, STATE_TILED);
+                            set_layout(m, d, LAYOUT_MONOCLE, false);
+                        } 
+    
+                        else {
+                            set_state(m, d, n, STATE_FLOATING);
 
-                    else if (cx >= 64 && cx <= 74) {
-                        client_state_t next = (n->client->state == STATE_FLOATING) ? STATE_TILED : STATE_FLOATING;
-                        set_state(m, d, n, next); 
+                            if (d->layout == LAYOUT_MONOCLE) {
+                            set_layout(m, d, LAYOUT_TILED, false);
+                            }
+                        }
+    
                         arrange(m, d);
                         focus_node(m, d, n);
                         return true;
-                    }
+                    }   
 
-                        if (n->client->state != STATE_FLOATING) {
-                        set_state(m, d, n, STATE_FLOATING);
-                        arrange(m, d);
+                    else if (cx >= 64 && cx <= 74) {
+
+                        if (n->client->state == STATE_FLOATING) {
+                            set_state(m, d, n, STATE_TILED); 
+
+                            if (d->layout == LAYOUT_MONOCLE) {
+                                set_layout(m, d, LAYOUT_TILED, false);
+                            }
+                        }
+                            
+                        else {
+                            set_state(m, d, n, STATE_FLOATING);
+                        }
                     }
+                    
+                    else{
 
                     focus_node(m, d, n);
-                    xcb_ungrab_pointer(dpy, XCB_CURRENT_TIME); // X11 kilidini kır
-                    grab_pointer(ACTION_MOVE); // bspwm motoruna devret
+                    xcb_ungrab_pointer(dpy, XCB_CURRENT_TIME);
+                    grab_pointer(ACTION_MOVE);
                     xcb_flush(dpy);
-                    return true;           
+                    return true;
+                    } 
+
+                    arrange(m, d);
+                    focus_node(m, d, n);
+                    return true;          
                 }
             }
         }
@@ -117,11 +144,8 @@ bool titlebar_handle_click(xcb_generic_event_t *evt) {
     return false;
 }
 
+
 void titlebar_hook_move_resize(xcb_window_t win, int16_t *x, int16_t *y, uint16_t *w, uint16_t *h) {
-
-    *y += titlebar_height;
-
-    if (*h > titlebar_height) *h -= titlebar_height;
 
     coordinates_t loc;
 
@@ -129,7 +153,10 @@ void titlebar_hook_move_resize(xcb_window_t win, int16_t *x, int16_t *y, uint16_
 
         client_t *c = loc.node->client;
 
-        if (c->titlebar != XCB_NONE) {
+        if (c->titlebar != XCB_NONE && c->state != STATE_FULLSCREEN) {
+
+            *y += titlebar_height;
+            if (*h > titlebar_height) *h -= titlebar_height;
 
             uint16_t tb_w = *w + (2 * c->border_width);
             uint32_t val[] = {*x, *y - titlebar_height, tb_w, titlebar_height};
@@ -160,15 +187,15 @@ void titlebar_hook_resize(xcb_window_t win, uint16_t *w, uint16_t *h) {
 
 void titlebar_hook_move(xcb_window_t win, int16_t *x, int16_t *y) {
 
-    *y += titlebar_height;
-
     coordinates_t loc;
 
     if (locate_window(win, &loc) && loc.node != NULL && loc.node->client != NULL) {
 
         client_t *c = loc.node->client;
 
-        if (c->titlebar != XCB_NONE) {
+        if (c->titlebar != XCB_NONE && c->state != STATE_FULLSCREEN) {
+
+            *y += titlebar_height;
 
             uint32_t val[] = {*x, *y - titlebar_height};
             xcb_configure_window(dpy, c->titlebar, XCB_CONFIG_WINDOW_X_Y, val);
@@ -195,5 +222,26 @@ void titlebar_handle_expose(xcb_generic_event_t *evt) {
                 }
             }
         }
+    }
+}
+
+void titlebar_destroy(client_t *c) {
+    if (c == NULL || c->titlebar == XCB_NONE) return;
+    
+    xcb_destroy_window(dpy, c->titlebar);
+    c->titlebar = XCB_NONE;
+}
+
+void titlebar_update_visibility(client_t *c) {
+
+    if (c == NULL || c->titlebar == XCB_NONE) return;
+
+    if (c->state == STATE_FULLSCREEN) {
+
+        xcb_unmap_window(dpy, c->titlebar);
+
+    } else {
+
+        xcb_map_window(dpy, c->titlebar);
     }
 }

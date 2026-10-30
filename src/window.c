@@ -240,14 +240,27 @@ void set_window_state(xcb_window_t win, xcb_icccm_wm_state_t state)
 void unmanage_window(xcb_window_t win)
 {
 	coordinates_t loc;
+
 	if (locate_window(win, &loc)) {
+
 		put_status(SBSC_MASK_NODE_REMOVE, "node_remove 0x%08X 0x%08X 0x%08X\n", loc.monitor->id, loc.desktop->id, win);
+
+		if (loc.node->client != NULL) {
+			titlebar_destroy(loc.node->client);
+		}
+		
 		remove_node(loc.monitor, loc.desktop, loc.node);
 		arrange(loc.monitor, loc.desktop);
-	} else {
+
+	} 
+
+	else {
+
 		for (pending_rule_t *pr = pending_rule_head; pr != NULL; pr = pr->next) {
+
 			if (pr->win == win) {
 				remove_pending_rule(pr);
+
 				return;
 			}
 		}

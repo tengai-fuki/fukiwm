@@ -39,6 +39,7 @@
 #include "stack.h"
 #include "window.h"
 #include "tree.h"
+#include "titlebar.h"
 
 void arrange(monitor_t *m, desktop_t *d)
 {
@@ -1939,6 +1940,10 @@ bool set_state(monitor_t *m, desktop_t *d, node_t *n, client_state_t s)
 		}
 	}
 
+	if (n->client != NULL) {
+		titlebar_update_visibility(n->client);
+	}
+
 	return true;
 }
 
@@ -2070,6 +2075,22 @@ void set_hidden(monitor_t *m, desktop_t *d, node_t *n, bool value)
 
 	propagate_hidden_downward(m, d, n, value);
 	propagate_hidden_upward(m, d, n);
+
+	if (n->client != NULL && n->client->titlebar != XCB_NONE) {
+
+        if (value) { 
+
+            xcb_unmap_window(dpy, n->client->titlebar);
+        } 
+
+        else {
+
+            if (n->client->state != STATE_FULLSCREEN) {
+            	
+                xcb_map_window(dpy, n->client->titlebar);
+            }
+        }
+    }
 
 	put_status(SBSC_MASK_NODE_FLAG, "node_flag 0x%08X 0x%08X 0x%08X hidden %s\n", m->id, d->id, n->id, ON_OFF_STR(value));
 
