@@ -325,14 +325,43 @@ void client_message(xcb_generic_event_t *evt)
 		return;
 	}
 
+	static xcb_atom_t wm_change_state = XCB_NONE;
+
+	if (wm_change_state == XCB_NONE) {
+
+		xcb_intern_atom_cookie_t cookie = xcb_intern_atom(dpy, 0, 15, "WM_CHANGE_STATE");
+		xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(dpy, cookie, NULL);
+
+		if (reply) {
+
+			wm_change_state = reply->atom;
+			free(reply);
+		}
+	}
+
+	if (e->type == wm_change_state && e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
+
+		set_hidden(loc.monitor, loc.desktop, loc.node, true);
+		return;
+	}
+
 	if (e->type == ewmh->_NET_WM_STATE) {
 		handle_state(loc.monitor, loc.desktop, loc.node, e->data.data32[1], e->data.data32[0]);
 		handle_state(loc.monitor, loc.desktop, loc.node, e->data.data32[2], e->data.data32[0]);
 	} else if (e->type == ewmh->_NET_ACTIVE_WINDOW) {
-		if ((ignore_ewmh_focus && e->data.data32[0] == XCB_EWMH_CLIENT_SOURCE_TYPE_NORMAL) ||
-		    loc.node == mon->desk->focus) {
+		if (ignore_ewmh_focus && e->data.data32[0] == XCB_EWMH_CLIENT_SOURCE_TYPE_NORMAL) {
 			return;
 		}
+
+		/*if (loc.node == mon->desk->focus) {
+			set_hidden(loc.monitor, loc.desktop, loc.node, true);
+			return;
+		}*/
+
+		if (loc.node->hidden) {
+			set_hidden(loc.monitor, loc.desktop, loc.node, false);
+		}
+
 		focus_node(loc.monitor, loc.desktop, loc.node);
 	} else if (e->type == ewmh->_NET_WM_DESKTOP) {
 		coordinates_t dloc;

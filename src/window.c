@@ -935,12 +935,36 @@ void window_set_visibility(xcb_window_t win, bool visible)
 
 void window_hide(xcb_window_t win)
 {
-	window_set_visibility(win, false);
+    window_set_visibility(win, false);
+
+    coordinates_t loc;
+
+    if (locate_window(win, &loc) && loc.node != NULL && loc.node->client != NULL) {
+
+        client_t *c = loc.node->client;
+
+        if (c->titlebar != XCB_NONE) {
+
+            xcb_unmap_window(dpy, c->titlebar);
+        }
+    }
 }
 
 void window_show(xcb_window_t win)
 {
-	window_set_visibility(win, true);
+    window_set_visibility(win, true);
+
+    coordinates_t loc;
+
+    if (locate_window(win, &loc) && loc.node != NULL && loc.node->client != NULL) {
+
+        client_t *c = loc.node->client;
+
+        if (c->titlebar != XCB_NONE && c->state != STATE_FULLSCREEN) {
+        	
+            xcb_map_window(dpy, c->titlebar);
+        }
+    }
 }
 
 void update_input_focus(void)
