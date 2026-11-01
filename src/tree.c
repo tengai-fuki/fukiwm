@@ -682,6 +682,14 @@ bool focus_node(monitor_t *m, desktop_t *d, node_t *n)
 		update_motion_recorder();
 	}
 
+	for (node_t *f = first_extrema(d->root); f != NULL; f = next_leaf(f, d->root)) {
+
+		if (f->client != NULL && f->client->titlebar != XCB_NONE) {
+
+			sync_titlebar_zindex(f->id, f->client->titlebar);
+		}
+	}
+
 	return true;
 }
 

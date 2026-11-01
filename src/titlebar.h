@@ -34,5 +34,6 @@ void titlebar_hook_move(xcb_window_t win, int16_t *x, int16_t *y);
 void titlebar_handle_expose(xcb_generic_event_t *evt);
 void titlebar_destroy(client_t *c);
 void titlebar_update_visibility(client_t *c);
+void sync_titlebar_zindex(xcb_window_t client_win, xcb_window_t title_win);
 
 #endif

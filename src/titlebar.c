@@ -245,3 +245,16 @@ void titlebar_update_visibility(client_t *c) {
         xcb_map_window(dpy, c->titlebar);
     }
 }
+
+void sync_titlebar_zindex(xcb_window_t client_win, xcb_window_t title_win)
+{
+    /* Checking this prevents the X server from throwing a BadWindow fit */
+    if (title_win == XCB_NONE)
+        return;
+
+    /* Lock the damn titlebar exactly ABOVE the client window. No exceptions. */
+    uint32_t values[] = { client_win, XCB_STACK_MODE_ABOVE };
+    xcb_configure_window(dpy, title_win, 
+                         XCB_CONFIG_WINDOW_SIBLING | XCB_CONFIG_WINDOW_STACK_MODE, 
+                         values);
+}
