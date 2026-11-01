@@ -965,6 +965,8 @@ void window_show(xcb_window_t win)
             xcb_map_window(dpy, c->titlebar);
         }
     }
+    ewmh_update_client_list(false);
+    ewmh_update_client_list(true);
 }
 
 void update_input_focus(void)
